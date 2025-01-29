@@ -1,0 +1,33 @@
+-- Biblioteca padrão
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+-- Entidade do projeto
+entity AlarmeAutomotivo is
+    Port (
+        porta        : in  STD_LOGIC; -- Estado da porta (0 = fechada, 1 = aberta)
+        ignicao      : in  STD_LOGIC; -- Estado da ignição (0 = desligada, 1 = ligada)
+        farois       : in  STD_LOGIC; -- Estado dos faróis (0 = apagados, 1 = acesos)
+        alarme       : out STD_LOGIC  -- Saída do alarme (0 = desativado, 1 = ativado)
+    );
+end AlarmeAutomotivo;
+
+-- Arquitetura do circuito
+architecture Comportamental of AlarmeAutomotivo is
+begin
+    process(porta, ignicao, farois)
+    begin
+        -- Condição 1: Faróis acesos e ignição desligada
+        if (farois = '1' and ignicao = '0') then
+            alarme <= '1';
+        
+        -- Condição 2: Porta aberta e ignição ligada
+        elsif (porta = '1' and ignicao = '1') then
+            alarme <= '1';
+        
+        -- Caso contrário, o alarme é desativado
+        else
+            alarme <= '0';
+        end if;
+    end process;
+end Comportamental;
