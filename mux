@@ -1,0 +1,41 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity Multiplexador is
+    Port ( clk        : in  STD_LOGIC;  -- Clock rápido (~1 kHz)
+           min        : in  STD_LOGIC_VECTOR(3 downto 0);
+           sec_unid   : in  STD_LOGIC_VECTOR(3 downto 0);
+           sec_dezena : in  STD_LOGIC_VECTOR(3 downto 0);
+           anodo      : out STD_LOGIC_VECTOR(2 downto 0);
+           saida_7seg : out STD_LOGIC_VECTOR(6 downto 0));
+end Multiplexador;
+
+architecture Behavioral of Multiplexador is
+    signal contador: INTEGER := 0;
+begin
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            contador <= (contador + 1) mod 3;
+        end if;
+    end process;
+
+    process(contador)
+    begin
+        case contador is
+            when 0 =>
+                anodo <= "110"; -- Display 1 (min)
+                saida_7seg <= CONV_STD_LOGIC_VECTOR(min, 7);
+            when 1 =>
+                anodo <= "101"; -- Display 2 (dezena de segundos)
+                saida_7seg <= CONV_STD_LOGIC_VECTOR(sec_dezena, 7);
+            when 2 =>
+                anodo <= "011"; -- Display 3 (unidade de segundos)
+                saida_7seg <= CONV_STD_LOGIC_VECTOR(sec_unid, 7);
+            when others =>
+                anodo <= "111";
+        end case;
+    end process;
+end Behavioral;
