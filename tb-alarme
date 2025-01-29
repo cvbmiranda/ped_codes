@@ -1,0 +1,72 @@
+-- Biblioteca padrão
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+-- Entidade do testbench (sem portas de entrada/saída)
+entity TB_AlarmeAutomotivo is
+end TB_AlarmeAutomotivo;
+
+-- Arquitetura do testbench
+architecture Simulacao of TB_AlarmeAutomotivo is
+    -- Componentes internos
+    signal porta    : STD_LOGIC := '0'; -- Estado inicial da porta
+    signal ignicao  : STD_LOGIC := '0'; -- Estado inicial da ignição
+    signal farois   : STD_LOGIC := '0'; -- Estado inicial dos faróis
+    signal alarme   : STD_LOGIC;        -- Saída do alarme
+
+    -- Instância do componente a ser testado
+    component AlarmeAutomotivo
+        Port (
+            porta    : in  STD_LOGIC;
+            ignicao  : in  STD_LOGIC;
+            farois   : in  STD_LOGIC;
+            alarme   : out STD_LOGIC
+        );
+    end component;
+
+begin
+    -- Conexão do DUT (Device Under Test)
+    DUT: AlarmeAutomotivo
+        Port map (
+            porta    => porta,
+            ignicao  => ignicao,
+            farois   => farois,
+            alarme   => alarme
+        );
+
+    -- Processo de simulação
+    process
+    begin
+        -- Caso 1: Todos os sinais desativados
+        porta <= '0'; ignicao <= '0'; farois <= '0';
+        wait for 10 ns;
+
+        -- Caso 2: Porta aberta, ignição desligada, faróis apagados
+        porta <= '1'; ignicao <= '0'; farois <= '0';
+        wait for 10 ns;
+
+        -- Caso 3: Porta fechada, ignição desligada, faróis acesos
+        porta <= '0'; ignicao <= '0'; farois <= '1';
+        wait for 10 ns;
+
+        -- Caso 4: Porta fechada, ignição ligada, faróis apagados
+        porta <= '0'; ignicao <= '1'; farois <= '0';
+        wait for 10 ns;
+
+        -- Caso 5: Porta aberta, ignição ligada, faróis apagados (alarme ativo)
+        porta <= '1'; ignicao <= '1'; farois <= '0';
+        wait for 10 ns;
+
+        -- Caso 6: Faróis acesos, ignição desligada (alarme ativo)
+        porta <= '0'; ignicao <= '0'; farois <= '1';
+        wait for 10 ns;
+
+        -- Caso 7: Porta aberta, ignição ligada, faróis acesos (alarme ativo)
+        porta <= '1'; ignicao <= '1'; farois <= '1';
+        wait for 10 ns;
+
+        -- Fim da simulação
+        wait;
+    end process;
+
+end Simulacao;
