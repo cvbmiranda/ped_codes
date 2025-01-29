@@ -1,0 +1,94 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity CronometroDigital is
+    Port ( clk       : in  STD_LOGIC;  -- Clock de entrada (50 MHz)
+           start     : in  STD_LOGIC;  -- Botão Start/Stop
+           reset     : in  STD_LOGIC;  -- Botão Reset
+           anodo     : out STD_LOGIC_VECTOR(2 downto 0); -- Controle do display
+           saida_7seg : out STD_LOGIC_VECTOR(6 downto 0)); -- Saída para display 7 seg
+end CronometroDigital;
+
+architecture Behavioral of CronometroDigital is
+    signal clk_1Hz : STD_LOGIC := '0';
+    signal contador_clk : INTEGER := 0;
+    constant MAX_COUNT : INTEGER := 50000000; -- Para 50 MHz -> 1 Hz
+    signal segundos : INTEGER range 0 to 59 := 0;
+    signal minutos  : INTEGER range 0 to 9 := 0;
+    signal rodando  : STD_LOGIC := '0';
+    signal contador_mux : INTEGER := 0;
+    signal sec_unid, sec_dez, min_disp : STD_LOGIC_VECTOR(3 downto 0);
+
+begin
+
+    -- Divisor de Clock
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            if contador_clk = MAX_COUNT-1 then
+                contador_clk <= 0;
+                clk_1Hz <= NOT clk_1Hz;
+            else
+                contador_clk <= contador_clk + 1;
+            end if;
+        end if;
+    end process;
+
+    -- Contador de Minutos e Segundos
+    process(clk_1Hz)
+    begin
+        if rising_edge(clk_1Hz) then
+            if reset = '1' then
+                segundos <= 0;
+                minutos <= 0;
+                rodando <= '0';
+            elsif start = '1' then
+                rodando <= NOT rodando;
+            end if;
+
+            if rodando = '1' then
+                if segundos = 59 then
+                    segundos <= 0;
+                    if minutos < 9 then
+                        minutos <= minutos + 1;
+                    end if;
+                else
+                    segundos <= segundos + 1;
+                end if;
+            end if;
+        end if;
+    end process;
+
+    -- Conversão de valores para display
+    sec_unid <= CONV_STD_LOGIC_VECTOR(segundos mod 10, 4);
+    sec_dez  <= CONV_STD_LOGIC_VECTOR(segundos / 10, 4);
+    min_disp <= CONV_STD_LOGIC_VECTOR(minutos, 4);
+
+    -- Multiplexação do Display
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            contador_mux <= (contador_mux + 1) mod 3;
+        end if;
+    end process;
+
+    process(contador_mux)
+    begin
+        case contador_mux is
+            when 0 =>
+                anodo <= "110"; -- Display Minutos
+                saida_7seg <= CONV_STD_LOGIC_VECTOR(min_disp, 7);
+            when 1 =>
+                anodo <= "101"; -- Dezena de Segundos
+                saida_7seg <= CONV_STD_LOGIC_VECTOR(sec_dez, 7);
+            when 2 =>
+                anodo <= "011"; -- Unidade de Segundos
+                saida_7seg <= CONV_STD_LOGIC_VECTOR(sec_unid, 7);
+            when others =>
+                anodo <= "111";
+        end case;
+    end process;
+
+end Behavioral;
