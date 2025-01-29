@@ -1,0 +1,58 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity Testbench is
+end Testbench;
+
+architecture Behavioral of Testbench is
+    -- Component declaration
+    component DecodificadorPrioridade is
+        Port (
+            p0, p1, p2, p3 : in STD_LOGIC;
+            x1, x0, int : out STD_LOGIC
+        );
+    end component;
+
+    -- Signals
+    signal p0, p1, p2, p3 : STD_LOGIC := '0';
+    signal x1, x0, int : STD_LOGIC;
+
+begin
+    -- Instantiate the unit under test (UUT)
+    UUT: DecodificadorPrioridade
+        port map (
+            p0 => p0,
+            p1 => p1,
+            p2 => p2,
+            p3 => p3,
+            x1 => x1,
+            x0 => x0,
+            int => int
+        );
+
+    -- Stimulus process
+    process
+    begin
+        -- Test case 1: Only p0 is high
+        p0 <= '1'; p1 <= '0'; p2 <= '0'; p3 <= '0';
+        wait for 10 ns;
+
+        -- Test case 2: Only p1 is high
+        p0 <= '0'; p1 <= '1'; p2 <= '0'; p3 <= '0';
+        wait for 10 ns;
+
+        -- Test case 3: Only p2 is high
+        p0 <= '0'; p1 <= '0'; p2 <= '1'; p3 <= '0';
+        wait for 10 ns;
+
+        -- Test case 4: Only p3 is high
+        p0 <= '0'; p1 <= '0'; p2 <= '0'; p3 <= '1';
+        wait for 10 ns;
+
+        -- Test case 5: All inputs are low
+        p0 <= '0'; p1 <= '0'; p2 <= '0'; p3 <= '0';
+        wait for 10 ns;
+
+        wait;
+    end process;
+end Behavioral;
