@@ -1,0 +1,63 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity unidade_logica is
+    Port (
+        Reset  : in STD_LOGIC; -- Reset global
+        A, B   : in STD_LOGIC_VECTOR(3 downto 0); -- Entradas de 4 bits
+        SS     : in STD_LOGIC_VECTOR(1 downto 0); -- Seletor de operação (2 bits)
+        F      : out STD_LOGIC_VECTOR(3 downto 0); -- Saída principal (para display)
+        over   : out STD_LOGIC; -- Overflow
+        c_out  : out STD_LOGIC; -- Carry-out
+        S1, S0 : out STD_LOGIC -- Bits do seletor (para LEDs)
+    );
+end unidade_logica;
+
+architecture Behavioral of unidade_logica is
+    signal result : STD_LOGIC_VECTOR(4 downto 0); -- Armazena resultado intermediário para carry/overflow
+begin
+    process(A, B, SS, Reset)
+    begin
+        if Reset = '1' then
+            F <= "0000";
+            over <= '0';
+            c_out <= '0';
+        else
+            case SS is
+                when "00" => -- SOMA (A + B)
+                    result <= ('0' & A) + ('0' & B);
+                    F <= result(3 downto 0);
+                    c_out <= result(4);
+                    over <= (A(3) and B(3) and not F(3)) or (not A(3) and not B(3) and F(3)); -- Overflow
+
+                when "01" => -- SUBTRAÇÃO (A - B)
+                    result <= ('0' & A) - ('0' & B);
+                    F <= result(3 downto 0);
+                    c_out <= result(4);
+                    over <= (A(3) and not B(3) and not F(3)) or (not A(3) and B(3) and F(3)); -- Overflow
+
+                when "10" => -- AND (A and B)
+                    F <= A and B;
+                    over <= '0';
+                    c_out <= '0';
+
+                when "11" => -- OR (A or B)
+                    F <= A or B;
+                    over <= '0';
+                    c_out <= '0';
+
+                when others =>
+                    F <= "0000";
+                    over <= '0';
+                    c_out <= '0';
+            end case;
+        end if;
+    end process;
+
+    -- Mapeia os bits do seletor SS para os LEDs correspondentes
+    S1 <= SS(1);
+    S0 <= SS(0);
+    
+end Behavioral;
