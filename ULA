@@ -1,0 +1,72 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity ULA is
+    Port (
+        A     : in STD_LOGIC_VECTOR(3 downto 0);
+        B     : in STD_LOGIC_VECTOR(3 downto 0);
+        SS    : in STD_LOGIC_VECTOR(1 downto 0);
+        RESET : in STD_LOGIC;
+        F     : out STD_LOGIC_VECTOR(3 downto 0);
+        COUT  : out STD_LOGIC;
+        OVER  : out STD_LOGIC;
+        S1    : out STD_LOGIC;
+        S0    : out STD_LOGIC
+    );
+end ULA;
+
+architecture Behavioral of ULA is
+    signal A_int, B_int : signed(3 downto 0);
+    signal result       : signed(4 downto 0);
+
+begin
+    A_int <= signed(A);
+    B_int <= signed(B);
+
+    process(A, B, SS, RESET)
+    begin
+        if RESET = '0' then
+            F    <= "0000";
+            COUT <= '0';
+            OVER <= '0';
+            S1   <= '0';
+            S0   <= '0';
+        else
+            case SS is
+                when "00" =>  -- Soma
+                    result := ('0' & A_int) + ('0' & B_int);
+                    F    <= std_logic_vector(result(3 downto 0));
+                    COUT <= result(4);
+                    OVER <= (A_int(3) xor B_int(3)) and (A_int(3) xor result(3));
+                    S1   <= SS(1);
+                    S0   <= SS(0);
+                when "01" =>  -- Subtração
+                    result := ('0' & A_int) - ('0' & B_int);
+                    F    <= std_logic_vector(result(3 downto 0));
+                    COUT <= result(4);
+                    OVER <= (A_int(3) xor B_int(3)) and (A_int(3) xor result(3));
+                    S1   <= SS(1);
+                    S0   <= SS(0);
+                when "10" =>  -- AND bit a bit
+                    F    <= A and B;
+                    COUT <= '0';
+                    OVER <= '0';
+                    S1   <= SS(1);
+                    S0   <= SS(0);
+                when "11" =>  -- OR bit a bit
+                    F    <= A or B;
+                    COUT <= '0';
+                    OVER <= '0';
+                    S1   <= SS(1);
+                    S0   <= SS(0);
+                when others =>
+                    F    <= "0000";
+                    COUT <= '0';
+                    OVER <= '0';
+                    S1   <= '0';
+                    S0   <= '0';
+            end case;
+        end if;
+    end process;
+end Behavioral;
