@@ -1,75 +1,78 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;  -- Biblioteca padrão recomendada
+use IEEE.NUMERIC_STD.ALL;
 
 entity tb_cronometro_digital is
 end tb_cronometro_digital;
 
 architecture Behavioral of tb_cronometro_digital is
-    signal clk_tb    : STD_LOGIC := '0';
-    signal reset_tb  : STD_LOGIC := '0';
-    signal start_tb  : STD_LOGIC := '0';
-    signal seg_tb    : STD_LOGIC_VECTOR(6 downto 0);
-    signal min_tb    : STD_LOGIC_VECTOR(6 downto 0);
-    signal anodo_tb  : STD_LOGIC_VECTOR(2 downto 0);
-
-    component cronometro_digital
-        Port ( clk      : in  STD_LOGIC;
-               reset    : in  STD_LOGIC;
-               start    : in  STD_LOGIC;
-               seg_out  : out STD_LOGIC_VECTOR(6 downto 0);
-               min_out  : out STD_LOGIC_VECTOR(6 downto 0);
-               anodo    : out STD_LOGIC_VECTOR(2 downto 0));
-    end component;
+    -- Declaração dos sinais para conexão com a UUT (Unidade sob Teste)
+    signal clk         : STD_LOGIC := '0';
+    signal rst         : STD_LOGIC := '1';
+    signal start_stop  : STD_LOGIC := '1';
+    signal display     : STD_LOGIC_VECTOR(6 downto 0);
+    signal anode       : STD_LOGIC_VECTOR(2 downto 0);
+    signal btn_debounced : STD_LOGIC := '1';
+    
+    -- Constante para simular o clock (50 MHz)
+    constant clk_period : time := 20 ns; -- 50 MHz = 20 ns de período
 
 begin
-    -- Instanciação do cronômetro digital
-    UUT: cronometro_digital
-        port map ( clk      => clk_tb,
-                   reset    => reset_tb,
-                   start    => start_tb,
-                   seg_out  => seg_tb,
-                   min_out  => min_tb,
-                   anodo    => anodo_tb );
+    -- Instância do cronômetro (Unidade Sob Teste - UUT)
+    uut: entity work.cronometro_digital
+        port map (
+            clk => clk,
+            rst => rst,
+            start_stop => start_stop,
+            display => display,
+            anode => anode,
+            btn_debounced => btn_debounced
+        );
 
-    -- Processo para gerar o clock (50 MHz)
+    -- Processo para gerar o clock
     process
     begin
-        while now < 10 ms loop  -- Simulação por 10 ms
-            clk_tb <= '0';
-            wait for 10 ns;
-            clk_tb <= '1';
-            wait for 10 ns;
+        while now < 500 ms loop -- Simulação por 500 ms
+            clk <= '0';
+            wait for clk_period / 2;
+            clk <= '1';
+            wait for clk_period / 2;
         end loop;
         wait;
     end process;
 
-    -- Teste de inicialização, start, stop e reset
+    -- Processo para simular o funcionamento do cronômetro
     process
     begin
-        -- Inicializa com reset ativado
-        reset_tb <= '1';
+        -- Reset inicial
+        rst <= '0';
         wait for 50 ns;
-        reset_tb <= '0';
+        rst <= '1';
 
-        -- Inicia o cronômetro
+        -- Simula pressionamento do botão para iniciar a contagem
+        wait for 100 ns;
+        btn_debounced <= '0';
         wait for 50 ns;
-        start_tb <= '1';
-        wait for 50 ns;
-        start_tb <= '0';
+        btn_debounced <= '1';
 
-        -- Espera um tempo e pausa o cronômetro
-        wait for 1 ms;
-        start_tb <= '1';
-        wait for 50 ns;
-        start_tb <= '0';
+        -- Aguarda alguns segundos para verificar a contagem
+        wait for 5 sec;
 
-        -- Reseta e testa novamente
-        wait for 1 ms;
-        reset_tb <= '1';
+        -- Simula pressionamento do botão para parar a contagem
+        btn_debounced <= '0';
         wait for 50 ns;
-        reset_tb <= '0';
+        btn_debounced <= '1';
 
+        -- Aguarda um tempo para verificar se parou
+        wait for 2 sec;
+
+        -- Simula reset para ver se volta ao zero
+        rst <= '0';
+        wait for 50 ns;
+        rst <= '1';
+
+        -- Finaliza simulação
         wait;
     end process;
+
 end Behavioral;
