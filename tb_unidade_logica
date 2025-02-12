@@ -1,0 +1,76 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity tb_unidade_logica is
+end tb_unidade_logica;
+
+architecture Behavioral of tb_unidade_logica is
+    -- Declaração do componente
+    component unidade_logica
+        Port (
+            Reset  : in STD_LOGIC;
+            A, B   : in STD_LOGIC_VECTOR(3 downto 0);
+            SS     : in STD_LOGIC_VECTOR(1 downto 0);
+            F      : out STD_LOGIC_VECTOR(3 downto 0);
+            over   : out STD_LOGIC;
+            c_out  : out STD_LOGIC;
+            S1, S0 : out STD_LOGIC
+        );
+    end component;
+
+    -- Sinais para teste
+    signal Reset  : STD_LOGIC;
+    signal A, B   : STD_LOGIC_VECTOR(3 downto 0);
+    signal SS     : STD_LOGIC_VECTOR(1 downto 0);
+    signal F      : STD_LOGIC_VECTOR(3 downto 0);
+    signal over   : STD_LOGIC;
+    signal c_out  : STD_LOGIC;
+    signal S1, S0 : STD_LOGIC;
+
+begin
+    -- Instância da ULA
+    uut: unidade_logica port map (Reset => Reset, A => A, B => B, SS => SS, F => F, over => over, c_out => c_out, S1 => S1, S0 => S0);
+
+    -- Processo de teste
+    process
+    begin
+        -- Reset inicial
+        Reset <= '1';
+        wait for 5 ns;
+        Reset <= '0';
+
+        -- Teste 1: Soma (A = 3, B = 5)
+        A <= "0011"; B <= "0101"; SS <= "00";
+        wait for 10 ns;
+        
+        -- Teste 2: Subtração (A = 7, B = 2)
+        A <= "0111"; B <= "0010"; SS <= "01";
+        wait for 10 ns;
+        
+        -- Teste 3: Soma com Overflow (A = 7, B = 7)
+        A <= "0111"; B <= "0111"; SS <= "00";
+        wait for 10 ns;
+        
+        -- Teste 4: Subtração com Overflow (A = -8, B = 1)
+        A <= "1000"; B <= "0001"; SS <= "01";
+        wait for 10 ns;
+        
+        -- Teste 5: AND (A = 9, B = 6)
+        A <= "1001"; B <= "0110"; SS <= "10";
+        wait for 10 ns;
+        
+        -- Teste 6: OR (A = 9, B = 6)
+        A <= "1001"; B <= "0110"; SS <= "11";
+        wait for 10 ns;
+
+        -- Reset final
+        Reset <= '1';
+        wait for 5 ns;
+        Reset <= '0';
+
+        -- Fim do teste
+        wait;
+    end process;
+end Behavioral;
