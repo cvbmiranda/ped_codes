@@ -1,72 +1,271 @@
 library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;
+use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
 
-entity ULA is
-    Port (
-        A     : in STD_LOGIC_VECTOR(3 downto 0);
-        B     : in STD_LOGIC_VECTOR(3 downto 0);
-        SS    : in STD_LOGIC_VECTOR(1 downto 0);
-        RESET : in STD_LOGIC;
-        F     : out STD_LOGIC_VECTOR(3 downto 0);
-        COUT  : out STD_LOGIC;
-        OVER  : out STD_LOGIC;
-        S1    : out STD_LOGIC;
-        S0    : out STD_LOGIC
+entity ula is 
+    port (
+        clk       : in  STD_LOGIC;
+        rst       : in  STD_LOGIC;
+        A, B      : in  STD_LOGIC;
+        SEL       : in  STD_LOGIC;
+        
+        c_out     : out STD_LOGIC; -- Carry Out
+        over      : out STD_LOGIC; -- Overflow
+        oper      : out STD_LOGIC_VECTOR(1 downto 0); -- LEDs indicam a operação
+        display   : out STD_LOGIC_VECTOR(6 downto 0);
+        anode     : out STD_LOGIC_VECTOR(3 downto 0)
     );
-end ULA;
+end ula;
 
-architecture Behavioral of ULA is
-    signal A_int, B_int : signed(3 downto 0);
-    signal result       : signed(4 downto 0);
+architecture rtl of ula is
+    -- Estados dos botões para detecção de borda
+    signal A_reg, A_last    : STD_LOGIC := '0';
+    signal B_reg, B_last    : STD_LOGIC := '0';
+    signal SEL_reg, SEL_last: STD_LOGIC := '0';
 
+    -- Estados da ULA
+    signal a_value, b_value  : integer range 0 to 7 := 0;  -- 
+    signal operation         : integer range 0 to 3 := 0;
+    signal result            : integer range -8 to 7 := 0; -- 4 bits com sinal
+    signal anode_sel         : integer range 0 to 3 := 0;
+    signal digit_value       : integer range 0 to 11 := 0;
+    signal negative          : STD_LOGIC := '0';
+    --signal negative_a          : STD_LOGIC := '0';
+    --signal negative_b          : STD_LOGIC := '0';
+    signal sum_5bits : std_logic_vector(4 downto 0);
+
+    -- Divisor de clock para multiplexação
+    signal clk_div       : integer := 0;
+    signal slow_clk      : STD_LOGIC := '0';
 begin
-    A_int <= signed(A);
-    B_int <= signed(B);
 
-    process(A, B, SS, RESET)
+    -- Divisor de clock para reduzir a frequência de multiplexação
+    process (clk)
     begin
-        if RESET = '0' then
-            F    <= "0000";
-            COUT <= '0';
-            OVER <= '0';
-            S1   <= '0';
-            S0   <= '0';
-        else
-            case SS is
-                when "00" =>  -- Soma
-                    result := ('0' & A_int) + ('0' & B_int);
-                    F    <= std_logic_vector(result(3 downto 0));
-                    COUT <= result(4);
-                    OVER <= (A_int(3) xor B_int(3)) and (A_int(3) xor result(3));
-                    S1   <= SS(1);
-                    S0   <= SS(0);
-                when "01" =>  -- Subtração
-                    result := ('0' & A_int) - ('0' & B_int);
-                    F    <= std_logic_vector(result(3 downto 0));
-                    COUT <= result(4);
-                    OVER <= (A_int(3) xor B_int(3)) and (A_int(3) xor result(3));
-                    S1   <= SS(1);
-                    S0   <= SS(0);
-                when "10" =>  -- AND bit a bit
-                    F    <= A and B;
-                    COUT <= '0';
-                    OVER <= '0';
-                    S1   <= SS(1);
-                    S0   <= SS(0);
-                when "11" =>  -- OR bit a bit
-                    F    <= A or B;
-                    COUT <= '0';
-                    OVER <= '0';
-                    S1   <= SS(1);
-                    S0   <= SS(0);
-                when others =>
-                    F    <= "0000";
-                    COUT <= '0';
-                    OVER <= '0';
-                    S1   <= '0';
-                    S0   <= '0';
-            end case;
+        if rising_edge(clk) then
+            if clk_div = 50000 then  -- Ajuste este valor conforme necessário
+                clk_div  <= 0;
+                slow_clk <= not slow_clk;
+            else
+                clk_div <= clk_div + 1;
+            end if;
         end if;
     end process;
-end Behavioral;
+
+    -- Processo para sincronizar os botões
+    process (clk)
+    begin
+        if rising_edge(clk) then
+            A_last   <= A_reg;
+            A_reg    <= A;
+            B_last   <= B_reg;
+            B_reg    <= B;
+            SEL_last <= SEL_reg;
+            SEL_reg  <= SEL;
+        end if;
+    end process;
+
+    -- Processo principal de atualização dos valores com clock
+    process (clk)
+    begin
+        if rising_edge(clk) then
+            -- Reset
+            if rst = '0' then
+                a_value     <= 0;
+                b_value     <= 0;
+                operation   <= 0;
+                result      <= 0;
+                negative    <= '0';
+                --negative_a  <= '0';
+                --negative_b  <= '0';
+                c_out       <= '0';
+                over        <= '0';
+            else
+                -- Botão A: Incrementar A na borda de descida
+                if A_last = '1' and A_reg = '0' then
+                    if a_value = 7 then 
+                        a_value <= 0;  -- -8
+                    else 
+                        a_value <= a_value + 1;
+                    end if;
+                end if;
+
+                -- Botão B: Incrementar B na borda de descida
+                if B_last = '1' and B_reg = '0' then
+                    if b_value = 7 then 
+                        b_value <= -0;  -- -8
+                    else 
+                        b_value <= b_value + 1;
+                    end if;
+                end if;
+
+                -- Seleção da operação na borda de descida
+                if SEL_last = '1' and SEL_reg = '0' then
+                    if operation = 3 then 
+                        operation <= 0;
+                    else 
+                        operation <= operation + 1;
+                    end if;
+                end if;
+
+                              -- Operações
+                case operation is
+                    when 0 =>  -- Soma
+                        result <= a_value + b_value;
+                        
+                        -- Detectando Carry Out
+                        sum_5bits <= std_logic_vector(resize(to_signed(a_value, 5), 5) + resize(to_signed(b_value, 5), 5));                       
+                        
+                        c_out <= sum_5bits(4);  -- O bit mais significativo indica carry_out
+                        -- Detectando Carry Out
+                        
+                        --if (signed(resize(to_signed(a_value, 5), 5)) + signed(resize(to_signed(b_value, 5), 5))) > 7 then
+                        --   c_out <= '1';
+                        --else
+                        --    c_out <= '0';
+                        --end if;
+
+                        -- Detectando Overflow
+                        if ((a_value >= 0 and b_value >= 0 and result < 0) or 
+                            (a_value < 0 and b_value < 0 and result >= 0)) then
+                            over <= '1';
+                        else
+                            over <= '0';
+                        end if;
+
+                    when 1 =>  -- Subtração
+								result <= a_value - b_value;
+
+							-- Detectando Borrow
+							  -- O borrow (c_out) deve ser '1' se a_value < b_value
+							  if (a_value < b_value) then
+									c_out <= '1';  -- Borrow ocorreu
+							  else
+									c_out <= '0';  -- Nenhum borrow
+							  end if;
+												
+                        -- c_out  <= '0'; -- Subtração não gera carry out
+
+                        -- Detectando Overflow
+                        if ((a_value >= 0 and b_value < 0 and result < 0) or
+                            (a_value < 0 and b_value >= 0 and result >= 0)) then
+                            over <= '1';
+                        else
+                            over <= '0';
+                        end if;
+
+
+                    when 2 =>  -- AND
+								 result <= to_integer(signed(to_signed(a_value, 4) and to_signed(b_value, 4)));
+								 c_out  <= '0';
+								 over   <= '0';
+
+							when 3 =>  -- OR
+								 result <= to_integer(signed(to_signed(a_value, 4) or to_signed(b_value, 4)));
+								 c_out  <= '0';
+								 over   <= '0';
+
+
+                    when others =>
+                        result <= 0;
+                        c_out  <= '0';
+                        over   <= '0';
+                end case;
+
+                -- Indicar se o número é negativo
+                if result < 0 then
+                    negative <= '1';
+                else
+                    negative <= '0';
+                end if;
+
+                --if a_value < 0 then
+                --    negative_a <= '1';
+                --else    
+                --    negative_a <= '0';
+                --end if;
+
+                --if b_value < 0 then
+                --    negative_b <= '1';
+                --else    
+                --    negative_b <= '0';
+                --end if;
+            end if;
+        end if;
+    end process;
+    
+    -- Indicador de operação nos LEDs
+    oper <= std_logic_vector(to_unsigned(operation, 2));
+
+    -- Multiplexação dos displays usando slow_clk
+    process (slow_clk)
+    begin
+        if rising_edge(slow_clk) then
+            anode_sel <= (anode_sel + 1) mod 4; -- quando chega a 6 ele retorna a 0
+        end if;
+    end process;
+    
+    anode <= "1110" when anode_sel = 0 else
+             "1101" when anode_sel = 1 else
+             "1011" when anode_sel = 2 else
+             "0111";
+             --"110111" when anode_sel = 3 else
+             --"101111" when anode_sel = 4 else
+             --"011111";
+
+    -- Definir o valor do display baseado no anodo ativo
+    process (anode_sel, a_value, b_value, negative, result)
+    begin
+        case anode_sel is
+            when 0 => digit_value <= abs(a_value);
+                --if negative_a = '1' then -- criar sinais de negativo a e b e ajustar nos if's abaixo
+                --    digit_value <= 10;
+                --else
+                --    digit_value <= 11;
+                --end if;
+
+            when 1 => digit_value <= abs(b_value);
+
+            when 2 => 
+                if negative = '1' then
+                    digit_value <= 10;
+                else
+                    digit_value <= 11;
+                end if;
+
+            when 3 => digit_value <= abs(result);
+            --when 3 => digit_value <= abs(b_value);
+
+            --when 4 => 
+            --    if negative = '1' then
+            --        digit_value <= 10;
+            --    else
+            --        digit_value <= 11;
+            --    end if;
+
+            --when 5 => digit_value <= abs(result);
+
+            when others => digit_value  <= 0;
+        end case;
+    end process;
+
+    -- Decodificador do display de 7 segmentos
+    process (digit_value)
+    begin
+        case digit_value is
+            when 0  => display <= not "1111110";
+            when 1  => display <= not "0110000";
+            when 2  => display <= not "1101101";
+            when 3  => display <= not "1111001";
+            when 4  => display <= not "0110011";
+            when 5  => display <= not "1011011";
+            when 6  => display <= not "1011111";
+            when 7  => display <= not "1110000";
+            when 8  => display <= not "1111111";
+            when 10 => display <= not "0000001"; -- '-' para números negativos
+            when 11 => display <= not "0000000";
+            when others => display <= "1111110";
+        end case;
+    end process;
+
+end rtl;
