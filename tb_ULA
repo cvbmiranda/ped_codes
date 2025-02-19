@@ -1,70 +1,101 @@
 library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;
+use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
 
-entity tb_ULA is
-end tb_ULA;
+entity tb_ula is
+end tb_ula;
 
-architecture testbench of tb_ULA is
-    signal A_tb     : STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
-    signal B_tb     : STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
-    signal SS_tb    : STD_LOGIC_VECTOR(1 downto 0) := (others => '0');
-    signal RESET_tb : STD_LOGIC := '1';
-    signal F_tb     : STD_LOGIC_VECTOR(3 downto 0);
-    signal COUT_tb  : STD_LOGIC;
-    signal OVER_tb  : STD_LOGIC;
-    signal S1_tb    : STD_LOGIC;
-    signal S0_tb    : STD_LOGIC;
+architecture sim of tb_ula is
+    -- Sinais para conectar ao DUT (Device Under Test)
+    signal clk       : STD_LOGIC := '0';
+    signal rst       : STD_LOGIC := '0';
+    signal A         : STD_LOGIC := '0';
+    signal B         : STD_LOGIC := '0';
+    signal SEL       : STD_LOGIC := '0';
     
-    constant CLK_PERIOD : time := 10 ns;
+    signal c_out     : STD_LOGIC;
+    signal over      : STD_LOGIC;
+    signal oper      : STD_LOGIC_VECTOR(1 downto 0);
+    signal display   : STD_LOGIC_VECTOR(6 downto 0);
+    signal anode     : STD_LOGIC_VECTOR(3 downto 0);
 
+    -- Tempo de simulação
+    constant clk_period : time := 20 ns;  -- Período do clock
 begin
-    uut: entity work.ULA
+
+    -- Instância do DUT
+    uut: entity work.ula
         port map (
-            A     => A_tb,
-            B     => B_tb,
-            SS    => SS_tb,
-            RESET => RESET_tb,
-            F     => F_tb,
-            COUT  => COUT_tb,
-            OVER  => OVER_tb,
-            S1    => S1_tb,
-            S0    => S0_tb
+            clk       => clk,
+            rst       => rst,
+            A         => A,
+            B         => B,
+            SEL       => SEL,
+            c_out     => c_out,
+            over      => over,
+            oper      => oper,
+            display   => display,
+            anode     => anode
         );
 
-    process
+    -- Geração do clock
+    clk_process : process
+    begin
+        while true loop
+            clk <= '0';
+            wait for clk_period / 2;
+            clk <= '1';
+            wait for clk_period / 2;
+        end loop;
+    end process;
+
+    -- Processo de estímulos
+    stimulus_process: process
     begin
         -- Reset inicial
-        RESET_tb <= '0';
-        wait for 20 ns;
-        RESET_tb <= '1';
-        wait for 20 ns;
+        rst <= '0';
+        wait for 40 ns;  -- Aguarda 2 períodos de clock
+        rst <= '1';
+        wait for 40 ns;  -- Aguarda 2 períodos de clock
         
-        -- Teste de soma (A + B)
-        A_tb <= "0011";  -- 3
-        B_tb <= "0101";  -- 5
-        SS_tb <= "00";   -- Soma
-        wait for 20 ns;
-        
-        -- Teste de subtração (A - B)
-        A_tb <= "0110";  -- 6
-        B_tb <= "0010";  -- 2
-        SS_tb <= "01";   -- Subtração
-        wait for 20 ns;
-        
-        -- Teste AND bit a bit
-        A_tb <= "1100";  -- 12
-        B_tb <= "1010";  -- 10
-        SS_tb <= "10";   -- AND
-        wait for 20 ns;
-        
-        -- Teste OR bit a bit
-        A_tb <= "1100";  -- 12
-        B_tb <= "1010";  -- 10
-        SS_tb <= "11";   -- OR
-        wait for 20 ns;
-        
-        -- Fim do teste
+        -- Teste: Incrementar A
+        A <= '1';  -- Pressiona o botão A
+        wait for 40 ns;  -- Aguarda 2 períodos de clock
+        A <= '0';  -- Libera o botão A
+        wait for 40 ns;  -- Aguarda 2 períodos de clock
+
+        -- Teste: Incrementar B
+        B <= '1';  -- Pressiona o botão B
+        wait for 40 ns;  -- Aguarda 2 períodos de clock
+        B <= '0';  -- Libera o botão B
+        wait for 40 ns;  -- Aguarda 2 períodos de clock
+
+        -- Teste: Selecionar operação (Soma)
+        SEL <= '1';  -- Pressiona o botão SEL
+        wait for 40 ns;  -- Aguarda 2 períodos de clock
+        SEL <= '0';  -- Libera o botão SEL
+        wait for 40 ns;  -- Aguarda 2 períodos de clock
+
+        -- Teste: Selecionar operação (Subtração)
+        SEL <= '1';  -- Pressiona o botão SEL
+        wait for 40 ns;  -- Aguarda 2 períodos de clock
+        SEL <= '0';  -- Libera o botão SEL
+        wait for 40 ns;  -- Aguarda 2 períodos de clock
+
+        -- Teste: Selecionar operação (AND)
+        SEL <= '1';  -- Pressiona o botão SEL
+        wait for 40 ns;  -- Aguarda 2 períodos de clock
+        SEL <= '0';  -- Libera o botão SEL
+        wait for 40 ns;  -- Aguarda 2 períodos de clock
+
+        -- Teste: Selecionar operação (OR)
+        SEL <= '1';  -- Pressiona o botão SEL
+        wait for 40 ns;  -- Aguarda 2 períodos de clock
+        SEL <= '0';  -- Libera o botão SEL
+        wait for 40 ns;  -- Aguarda 2 períodos de clock
+
+        -- Finaliza a simulação
         wait;
     end process;
-end testbench;
+
+end sim;
