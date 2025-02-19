@@ -12,25 +12,25 @@ architecture Behavioral of decodificador_de_prioridade is
 begin
     process (p0, p1, p2, p3)
     begin
-        if (p0 = '1') then
+        if (p0 = '0') then
             x1 <= '0';
             x0 <= '0';
             int <= '1';
-        elsif (p1 = '1') then
+        elsif (p1 = '0') then
             x1 <= '0';
             x0 <= '1';
             int <= '1';
-        elsif (p2 = '1') then
+        elsif (p2 = '0') then
             x1 <= '1';
             x0 <= '0';
             int <= '1';
-        elsif (p3 = '1') then
+        elsif (p3 = '0') then
             x1 <= '1';
             x0 <= '1';
             int <= '1';
         else
-            x1 <= '0';
-            x0 <= '0';
+            x1 <= '1';
+            x0 <= '1';
             int <= '0';
         end if;
     end process;
