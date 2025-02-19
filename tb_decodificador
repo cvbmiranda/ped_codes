@@ -33,24 +33,24 @@ begin
     -- Processo de estímulo
     process
     begin
-        -- Teste para entrada 1000
-        p0 <= '1'; p1 <= '0'; p2 <= '0'; p3 <= '0';
+        -- Teste para entrada 0111
+        p0 <= '0'; p1 <= '1'; p2 <= '1'; p3 <= '1';
         wait for 10 ns;
 
-        -- Teste para entrada 0100
-        p0 <= '0'; p1 <= '1'; p2 <= '0'; p3 <= '0';
+        -- Teste para entrada 1011
+        p0 <= '1'; p1 <= '0'; p2 <= '1'; p3 <= '1';
         wait for 10 ns;
 
-        -- Teste para entrada 0010
-        p0 <= '0'; p1 <= '0'; p2 <= '1'; p3 <= '0';
+        -- Teste para entrada 1101
+        p0 <= '1'; p1 <= '1'; p2 <= '0'; p3 <= '1';
         wait for 10 ns;
 
-        -- Teste para entrada 0001
-        p0 <= '0'; p1 <= '0'; p2 <= '0'; p3 <= '1';
+        -- Teste para entrada 1110
+        p0 <= '1'; p1 <= '1'; p2 <= '1'; p3 <= '0';
         wait for 10 ns;
 
-        -- Teste para entrada 0000
-        p0 <= '0'; p1 <= '0'; p2 <= '0'; p3 <= '0';
+        -- Teste para entrada 1111
+        p0 <= '1'; p1 <= '1'; p2 <= '1'; p3 <= '1';
         wait for 10 ns;
 
         wait;
